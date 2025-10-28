@@ -1,0 +1,119 @@
+# Job definitions for the Real-Time RAG Agent pipeline
+# This file is included by the main databricks.yml
+
+resources:
+  jobs:
+    # Main pipeline job that runs all notebooks in sequence
+    realtime_rag_agent_pipeline:
+      name: "[${bundle.target}] Real-Time RAG Agent Pipeline"
+
+      job_clusters:
+        - job_cluster_key: main_cluster
+          new_cluster:
+            spark_version: 14.3.x-scala2.12
+            node_type_id: ${var.cluster_node_type}
+            num_workers: 0  # Single-node cluster sufficient for this workload
+            spark_conf:
+              spark.master: local[*]
+              spark.databricks.cluster.profile: singleNode
+            custom_tags:
+              ResourceClass: SingleNode
+              Project: RealTimeRAGAgent
+              Environment: ${bundle.target}
+
+      tasks:
+        # Task 1: Set up agent configurations and UC function
+        - task_key: setup_agent_configs
+          job_cluster_key: main_cluster
+          notebook_task:
+            notebook_path: ./src/01-agent-configs.ipynb
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              secret_scope: ${var.secret_scope}
+              secret_key: ${var.secret_key}
+
+        # Task 2: Define the agent architecture
+        - task_key: define_agent
+          depends_on:
+            - task_key: setup_agent_configs
+          job_cluster_key: main_cluster
+          notebook_task:
+            notebook_path: ./src/02-define-agent.ipynb
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              llm_endpoint_name: ${var.llm_endpoint_name}
+
+        # Task 3: Create and test the agent
+        - task_key: create_agent
+          depends_on:
+            - task_key: define_agent
+          job_cluster_key: main_cluster
+          notebook_task:
+            notebook_path: ./src/03-create-agent.ipynb
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+
+        # Task 4: Evaluate agent performance
+        - task_key: evaluate_agent
+          depends_on:
+            - task_key: create_agent
+          job_cluster_key: main_cluster
+          notebook_task:
+            notebook_path: ./src/04-evaluate-agent.ipynb
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+
+      # Email notifications on job completion
+      email_notifications:
+        on_success:
+          - ${workspace.current_user.userName}
+        on_failure:
+          - ${workspace.current_user.userName}
+
+      # Set timeout to 2 hours
+      timeout_seconds: 7200
+
+      # Set maximum concurrent runs to 1 to avoid conflicts
+      max_concurrent_runs: 1
+
+      tags:
+        project: realtime-rag-agents
+        environment: ${bundle.target}
+
+    # Optional: Separate job for just running evaluations
+    evaluate_agent_only:
+      name: "[${bundle.target}] Evaluate RAG Agent"
+
+      job_clusters:
+        - job_cluster_key: eval_cluster
+          new_cluster:
+            spark_version: 14.3.x-scala2.12
+            node_type_id: ${var.cluster_node_type}
+            num_workers: 0
+            spark_conf:
+              spark.master: local[*]
+              spark.databricks.cluster.profile: singleNode
+            custom_tags:
+              ResourceClass: SingleNode
+
+      tasks:
+        - task_key: run_evaluation
+          job_cluster_key: eval_cluster
+          notebook_task:
+            notebook_path: ./src/04-evaluate-agent.ipynb
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+
+      email_notifications:
+        on_failure:
+          - ${workspace.current_user.userName}
+
+      tags:
+        project: realtime-rag-agents
+        environment: ${bundle.target}
+        job_type: evaluation

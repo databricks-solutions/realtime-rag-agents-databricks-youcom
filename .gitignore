@@ -3,3 +3,23 @@
 __pycache__
 .idea/
 .env
+
+# Databricks configuration files with secrets
+src/common.yaml
+
+# Databricks bundle state
+.databricks/
+
+# Python artifacts
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
+
+# MLflow artifacts
+mlruns/
+mlartifacts/
