@@ -3,6 +3,7 @@
 __pycache__
 .idea/
 .env
+.vscode/
 
 # Databricks configuration files with secrets
 src/common.yaml

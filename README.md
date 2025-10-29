@@ -135,3 +135,7 @@ Databricks support doesn't cover this content. For questions or bugs, please ope
 
 | library                                | description             | license    | source                                              |
 |----------------------------------------|-------------------------|------------|-----------------------------------------------------|
+| mlflow-skinny                          | MLflow tracking and model management for AI applications | Apache 2.0 | https://github.com/mlflow/mlflow |
+| langgraph                              | Framework for building stateful, multi-actor applications with LLMs | MIT | https://github.com/langchain-ai/langgraph |
+| databricks-langchain                   | Databricks integrations for LangChain framework | Apache 2.0 | https://github.com/databricks/databricks-langchain |
+| databricks-agents                      | Databricks Agent Framework for building AI agents | Apache 2.0 | https://docs.databricks.com/generative-ai/agent-framework/ |
